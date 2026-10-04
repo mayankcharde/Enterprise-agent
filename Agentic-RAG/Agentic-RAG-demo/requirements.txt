@@ -1,0 +1,35 @@
+# langgraph==1.2.11
+# langchain==1.3.16
+# langchain-core==1.6.0
+# langchain-groq==1.1.3
+# langchain-huggingface==1.2.2
+# langchain-pinecone==0.2.13
+# langchain-community==0.4.2
+# langchain-text-splitters==1.1.2
+# langchain-tavily==0.2.18
+# pinecone==7.3.0
+# sentence-transformers==6.0.0
+# beautifulsoup4==4.15.0
+# python-dotenv==1.2.3.
+
+
+
+langgraph==1.2.11
+langchain==1.3.16
+langchain-core==1.6.0
+langchain-groq==1.1.3
+langchain-google-genai==2.1.12
+langchain-huggingface==1.2.2
+langchain-pinecone==0.2.13
+langchain-community==0.4.2
+langchain-text-splitters==1.1.2
+langchain-tavily==0.2.18
+pinecone==7.3.0
+sentence-transformers==6.0.0
+beautifulsoup4==4.15.0
+python-dotenv==1.2.3
+
+# CrewAI compatibility constraints, if CrewAI is required
+click~=8.1.7
+mcp~=1.26.0
+pydantic~=2.11.9

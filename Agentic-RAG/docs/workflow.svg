@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" role="img" aria-labelledby="title desc">
+  <title id="title">NexusIQ agentic RAG workflow</title>
+  <desc id="desc">Question routing, private knowledge retrieval, evidence grading, web fallback, response generation, validation and audit.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#111827"/><stop offset="1" stop-color="#172554"/></linearGradient>
+    <linearGradient id="primary" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#6366f1"/></linearGradient>
+    <linearGradient id="success" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f766e"/><stop offset="1" stop-color="#14b8a6"/></linearGradient>
+    <linearGradient id="warning" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c2410c"/><stop offset="1" stop-color="#f97316"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#020617" flood-opacity=".35"/></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#94a3b8"/></marker>
+    <style>
+      .label { font: 600 18px Inter, Segoe UI, sans-serif; fill: #f8fafc; text-anchor: middle; }
+      .small { font: 500 14px Inter, Segoe UI, sans-serif; fill: #cbd5e1; text-anchor: middle; }
+      .edge { fill: none; stroke: #94a3b8; stroke-width: 3; marker-end: url(#arrow); }
+      .node { stroke: #a5b4fc; stroke-width: 2; filter: url(#shadow); }
+      .pill { font: 600 13px Inter, Segoe UI, sans-serif; fill: #e0e7ff; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect width="1400" height="820" rx="28" fill="url(#bg)"/>
+  <circle cx="1250" cy="80" r="220" fill="#7c3aed" opacity=".12"/>
+  <circle cx="100" cy="760" r="260" fill="#14b8a6" opacity=".08"/>
+  <text x="70" y="70" fill="#a5b4fc" font-family="Inter, Segoe UI, sans-serif" font-size="15" font-weight="700" letter-spacing="3">NEXUSIQ / LANGGRAPH</text>
+  <text x="70" y="112" fill="#f8fafc" font-family="Inter, Segoe UI, sans-serif" font-size="32" font-weight="800">Grounded answer workflow</text>
+  <text x="70" y="140" fill="#94a3b8" font-family="Inter, Segoe UI, sans-serif" font-size="16">Private evidence first. Public fallback only when appropriate.</text>
+  <path class="edge" d="M700 195 V230"/><path class="edge" d="M700 315 V355"/>
+  <path class="edge" d="M560 400 H330 V485"/><path class="edge" d="M700 445 V485"/>
+  <path class="edge" d="M840 400 H1070 V485"/>
+  <path class="edge" d="M330 555 V625 H700 V680"/><path class="edge" d="M700 555 V680"/>
+  <path class="edge" d="M1070 555 V625 H700 V680"/><path class="edge" d="M1220 555 V625 H700 V680"/>
+  <path class="edge" d="M700 765 V780"/>
+  <rect class="node" x="555" y="155" width="290" height="70" rx="18" fill="url(#primary)"/>
+  <text class="label" x="700" y="185">User question</text><text class="small" x="700" y="208">authenticated gateway request</text>
+  <rect class="node" x="555" y="230" width="290" height="85" rx="18" fill="url(#primary)"/>
+  <text class="label" x="700" y="266">Route question</text><text class="small" x="700" y="290">classify intent and source</text>
+  <rect class="node" x="560" y="355" width="280" height="90" rx="18" fill="#312e81"/>
+  <text class="label" x="700" y="391">Question category</text><text class="small" x="700" y="416">internal / current / general</text>
+  <rect class="node" x="180" y="485" width="300" height="70" rx="18" fill="url(#success)"/>
+  <text class="label" x="330" y="514">Retrieve private KB</text><text class="small" x="330" y="537">Pinecone approved chunks</text>
+  <rect class="node" x="555" y="485" width="290" height="70" rx="18" fill="#475569"/>
+  <text class="label" x="700" y="514">Grade evidence</text><text class="small" x="700" y="537">relevance and approval gate</text>
+  <rect class="node" x="920" y="485" width="300" height="70" rx="18" fill="url(#warning)"/>
+  <text class="label" x="1070" y="514">Search public web</text><text class="small" x="1070" y="537">Tavily current information</text>
+  <rect class="node" x="1130" y="485" width="180" height="70" rx="18" fill="#7f1d1d"/>
+  <text class="label" x="1220" y="514">Abstain</text><text class="small" x="1220" y="537">insufficient proof</text>
+  <rect class="node" x="555" y="680" width="290" height="85" rx="18" fill="url(#primary)"/>
+  <text class="label" x="700" y="716">Generate and validate</text><text class="small" x="700" y="740">structured answer + citations</text>
+  <rect x="555" y="780" width="290" height="28" rx="14" fill="#0f766e"/>
+  <text class="pill" x="700" y="799">audit trace • evidence status • response</text>
+  <text x="410" y="615" class="pill">verified internal</text><text x="910" y="615" class="pill">external guidance</text>
+</svg>

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ app_name }}</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <script>
+      window.APP_CONFIG = { backendApiUrl: {{ backend_api_url | tojson }} };
+    </script>
+  </head>
+  <body data-theme="dark">
+    <section id="authPage" class="auth-page">
+      <div class="auth-orb auth-orb-one" aria-hidden="true"></div>
+      <div class="auth-orb auth-orb-two" aria-hidden="true"></div>
+      <div class="auth-grid" aria-hidden="true"></div>
+      <div class="auth-card">
+        <div class="auth-card-inner">
+          <div class="brand-row">
+            <div class="brand-mark">✦</div>
+            <div>
+              <div class="brand-name">Nexus<span>IQ</span></div>
+              <div class="brand-caption">Secure IT support</div>
+            </div>
+          </div>
+          <div class="auth-heading">
+            <div class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE ACCESS</div>
+            <h1 id="authTitle">Sign in to <span>NexusIQ</span></h1>
+            <p id="authDescription" class="muted">Use your employee or administrator account to continue.</p>
+          </div>
+          <form id="authForm" class="auth-form">
+            <label id="nameField" class="hidden">Name<div class="auth-input-wrap"><span>◈</span><input id="authName" type="text" autocomplete="name" placeholder="Your full name" /></div></label>
+            <label>Email<div class="auth-input-wrap"><span>@</span><input id="authEmail" type="email" autocomplete="email" placeholder="you@company.com" required /></div></label>
+            <label>Password<div class="auth-input-wrap"><span>⌁</span><input id="authPassword" type="password" autocomplete="current-password" placeholder="Enter your password" minlength="8" required /></div></label>
+            <button id="authSubmit" class="send-btn full" type="submit"><span>Sign in securely</span><b>↗</b></button>
+          </form>
+          <div id="authStatus" class="auth-status" role="alert"></div>
+          <div class="auth-divider"><span>or</span></div>
+          <button id="authModeToggle" class="text-btn auth-toggle" type="button">New employee? <strong>Create an account</strong></button>
+          <div class="auth-footer"><span class="status-dot"></span> Protected workspace <span class="auth-lock">⌘</span></div>
+        </div>
+      </div>
+    </section>
+    <div class="shell">
+      <div id="mobileBackdrop" class="mobile-backdrop hidden"></div>
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-content">
+          <div class="brand-row">
+            <div class="brand-mark">✦</div>
+            <div>
+              <div class="brand-name">Nexus<span>IQ</span></div>
+              <div class="brand-caption">Enterprise copilot</div>
+            </div>
+            <button id="closeSidebar" class="mobile-close" aria-label="Close navigation">×</button>
+          </div>
+
+          <div class="sidebar-intro">
+            <div class="eyebrow">FDE PROJECT</div>
+            <h1>IT Support<br /><span>Agentic RAG</span></h1>
+          </div>
+          <p class="muted">
+            Private company knowledge first. External web only when evidence is
+            weak.
+          </p>
+
+          <nav class="nav-list" aria-label="Primary navigation">
+            <div class="nav-label">Workspace</div>
+            <button class="nav-item active" data-view="chat"><span class="nav-icon">⌁</span> Chat workspace</button>
+            <button class="nav-item" data-view="workflow"><span class="nav-icon">◇</span> LangGraph workflow</button>
+            <button class="nav-item" data-view="knowledge"><span class="nav-icon">▤</span> Knowledge base</button>
+            <button class="nav-item" data-view="documents"><span class="nav-icon">□</span> Documents</button>
+            <button class="nav-item" data-view="observability"><span class="nav-icon">◌</span> Observability</button>
+            <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span> Settings</button>
+          </nav>
+
+          <div class="recent-chats">
+            <div class="nav-label">Recent chats</div>
+            <div class="recent-chat"><span>VPN connection guide</span><small>Today, 10:42</small></div>
+            <div class="recent-chat"><span>Password reset policy</span><small>Yesterday</small></div>
+          </div>
+
+        <div class="workflow-card">
+          <div class="card-heading"><h3>LangGraph workflow</h3><span class="live-dot">Live</span></div>
+          <div class="flow-step"><i>01</i><span>Route question</span><b>→</b></div>
+          <div class="flow-step"><i>02</i><span>Retrieve private KB</span><b>→</b></div>
+          <div class="flow-step"><i>03</i><span>Grade evidence</span><b>→</b></div>
+          <div class="flow-step"><i>04</i><span>Web fallback if weak</span><b>→</b></div>
+          <div class="flow-step"><i>05</i><span>Rewrite & retry</span><b>→</b></div>
+          <div class="flow-step active"><i>06</i><span>Grounded answer</span><b>✓</b></div>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="privacy-note"><span>◉</span><div><strong>Private by default</strong><small>Your data stays in your workspace.</small></div></div>
+          <button id="newChat" class="new-chat-btn"><span>+</span> New chat</button>
+          <button id="openUpload" class="secondary-btn admin-only">
+            <span class="plus">+</span> Add company document
+          </button>
+        </div>
+        </div>
+        <div class="sidebar-version">
+          <span class="status-dot"></span> Systems operational <span>v1.0.0</span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="breadcrumbs"><span>Workspace</span><b>/</b><strong>IT support</strong></div>
+          <div class="topbar-actions">
+            <span class="secure-label"><span class="status-dot"></span> Secure session</span>
+            <button id="themeToggle" class="icon-btn" aria-label="Switch theme">☼</button>
+            <button id="openSidebar" class="icon-btn mobile-menu" aria-label="Open navigation">☰</button>
+            <div id="profile" class="profile">JD</div>
+            <button id="logoutBtn" class="text-btn">Sign out</button>
+          </div>
+        </header>
+
+        <section id="chatView" class="view active-view">
+        <section class="hero">
+          <div>
+            <div class="eyebrow">INTELLIGENT SUPPORT DESK</div>
+            <h2>What can we solve <span>together?</span></h2>
+            <p>Ask a question and let our grounded agent find the right answer from your company knowledge.</p>
+          </div>
+          <div class="hero-orb" aria-hidden="true"><span>✦</span></div>
+        </section>
+
+        <section id="chat" class="chat-area">
+          <div class="message assistant">
+            <div class="avatar">✦</div>
+            <div class="bubble">
+              <div class="message-meta"><strong>NexusIQ AI</strong><span>Just now</span></div>
+              <strong class="welcome-title">How can I help with IT support?</strong>
+              <p>Try a question below, or ask anything about your company’s systems, policies, and tools.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="composer-wrap">
+          <div class="examples-label">Suggested questions</div>
+          <div class="examples">
+            <button class="example"><span>⌁</span> How do I connect to the company VPN?</button>
+            <button class="example"><span>⌁</span> What is our password reset policy?</button>
+            <button class="example"><span>⌁</span> Latest Microsoft Teams outage guidance?</button>
+          </div>
+          <form id="chatForm" class="composer">
+            <div class="composer-icon">✦</div>
+            <textarea id="question" rows="2" placeholder="Ask an IT support question..." required></textarea>
+            <button type="submit" class="send-btn">Ask Agent <span>↗</span></button>
+          </form>
+          <div class="composer-hint">AI can make mistakes. Check important information with your IT team.</div>
+        </section>
+        </section>
+
+        <section id="secondaryView" class="secondary-view hidden" aria-live="polite">
+          <div class="secondary-header">
+            <div class="eyebrow">NEXUSIQ WORKSPACE</div>
+            <h2 id="secondaryTitle">LangGraph workflow</h2>
+            <p id="secondaryDescription">Explore the connected agent workflow and its latest execution state.</p>
+          </div>
+          <div id="secondaryContent" class="secondary-content"></div>
+        </section>
+      </main>
+
+      <aside class="trace-panel">
+        <div class="panel-kicker">OBSERVABILITY</div>
+        <div class="trace-title-row"><h2>Agent trace</h2><span id="traceStatus" class="trace-status"><span class="status-dot"></span> Ready</span></div>
+        <p class="muted">Follow the reasoning path as your request is processed.</p>
+        <div id="trace" class="trace-list">
+          <div class="empty trace-empty"><span>✦</span><strong>Trace will appear here</strong><small>Ask a question to see the agent work.</small></div>
+        </div>
+        <div class="source-box">
+          <span>Final source</span>
+          <strong id="sourceUsed">—</strong>
+          <small>Evidence selected for this answer</small>
+          <button id="viewSources" class="text-btn hidden">View sources ↗</button>
+        </div>
+        <div class="trace-footer"><span class="pulse"></span> Live pipeline monitoring</div>
+      </aside>
+    </div>
+
+    <div id="uploadModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2>Ingest Company Document</h2>
+          <button id="closeUpload">×</button>
+        </div>
+        <p class="muted">
+          Upload PDF, TXT, Markdown, or DOCX. The document is chunked, embedded,
+          and indexed into Pinecone.
+        </p>
+        <input id="fileInput" type="file" accept=".pdf,.txt,.md,.docx" />
+        <button id="uploadBtn" class="send-btn full">Index Document</button>
+        <div id="uploadStatus" class="upload-status"></div>
+      </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>
