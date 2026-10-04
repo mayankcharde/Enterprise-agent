@@ -14,6 +14,8 @@ settings = get_settings()
 
 class ChatRequest(BaseModel):
     question: str = Field(min_length=2, max_length=3000)
+    user_id: str | None = Field(default=None, max_length=100)
+    conversation_id: str | None = Field(default=None, max_length=100)
 
 
 @router.get("/health")
@@ -26,7 +28,13 @@ def chat(payload: ChatRequest):
     request_id = str(uuid4())
     try:
         result = ask(payload.question, request_id=request_id)
-        write_audit(redact_text(payload.question), result["source_used"], result.get("trace", []))
+        write_audit(
+            redact_text(payload.question),
+            result["source_used"],
+            result.get("trace", []),
+            user_id=payload.user_id,
+            conversation_id=payload.conversation_id,
+        )
 
         return {
             "answer": result["answer"],

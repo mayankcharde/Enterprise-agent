@@ -6,12 +6,17 @@ const sourceUsed = document.getElementById("sourceUsed");
 const AUTH_API = `${window.APP_CONFIG?.backendApiUrl || "http://127.0.0.1:3000"}/api`;
 let currentUser = null;
 let authMode = "login";
+let currentConversationId = null;
 
 function authHeaders(extra = {}) {
   const token = localStorage.getItem("nexusiq-token");
   return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
 }
 function showApp(user) {
+  if (currentUser && currentUser.id !== user.id) {
+    currentConversationId = null;
+    resetChatView();
+  }
   currentUser = user;
   document.getElementById("authPage")?.classList.add("hidden");
   document.querySelector(".shell")?.classList.remove("hidden");
@@ -20,6 +25,7 @@ function showApp(user) {
     element.classList.toggle("hidden", user.role !== "admin");
   });
   document.querySelector('[data-view="documents"]')?.classList.toggle("hidden", user.role !== "admin");
+  loadConversations();
 }
 function showAuth() {
   document.getElementById("authPage")?.classList.remove("hidden");
@@ -57,6 +63,72 @@ function addMessage(role, text, source = "", citations = [], steps = [], evidenc
   wrap.innerHTML = `<div class="avatar">AI</div><div class="bubble"><div class="response-section">${formatText(text)}</div>${stepHtml}${status}${source ? `<div class="answer-source">Source: ${escapeHtml(source)}</div>` : ""}${citeHtml}</div>`;
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
+}
+function resetChatView() {
+  chat.innerHTML = `<div class="message assistant"><div class="avatar">✦</div><div class="bubble"><div class="message-meta"><strong>NexusIQ AI</strong><span>Just now</span></div><strong class="welcome-title">How can I help with IT support?</strong><p>Start a new grounded support request below.</p></div></div>`;
+  renderTrace([]);
+  sourceUsed.textContent = "—";
+  document.getElementById("viewSources")?.classList.add("hidden");
+}
+function markActiveConversation() {
+  document.querySelectorAll(".recent-chat").forEach((chatButton) => {
+    chatButton.classList.toggle("active", chatButton.dataset.conversationId === currentConversationId);
+  });
+}
+function renderSavedMessage(message) {
+  const metadata = message.metadata || {};
+  addMessage(message.role, message.content, metadata.source_used || "", metadata.citations || metadata.sources || [], metadata.steps || [], metadata.evidence_status || "");
+}
+async function loadConversations(skipAutoOpen = false) {
+  try {
+    const response = await fetch(`${AUTH_API}/conversations`, { headers: authHeaders() });
+    if (!response.ok) throw new Error("Unable to load conversations");
+    const data = await response.json();
+    const recentChats = document.querySelector(".recent-chats");
+    if (!recentChats) return;
+    recentChats.innerHTML = `<div class="nav-label">Recent chats</div>`;
+    data.conversations.forEach((conversation) => {
+      const button = document.createElement("button");
+      button.className = "recent-chat";
+      button.type = "button";
+      button.dataset.conversationId = conversation.id;
+      button.setAttribute("aria-current", conversation.id === currentConversationId ? "page" : "false");
+      button.innerHTML = `<span>${escapeHtml(conversation.title)}</span><small>${new Date(conversation.updatedAt).toLocaleString()}</small>`;
+      button.addEventListener("click", () => openConversation(conversation.id));
+      recentChats.appendChild(button);
+    });
+    markActiveConversation();
+    if (!skipAutoOpen) {
+      if (!currentConversationId && data.conversations.length) await openConversation(data.conversations[0].id);
+      if (!currentConversationId) await createConversation();
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+async function createConversation() {
+  const response = await fetch(`${AUTH_API}/conversations`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ title: "New chat" }),
+  });
+  if (!response.ok) throw new Error("Unable to create conversation");
+  const data = await response.json();
+  currentConversationId = data.conversation.id;
+  resetChatView();
+  await loadConversations(true);
+  markActiveConversation();
+}
+async function openConversation(id) {
+  const response = await fetch(`${AUTH_API}/conversations/${encodeURIComponent(id)}`, { headers: authHeaders() });
+  if (!response.ok) throw new Error("Unable to open conversation");
+  const data = await response.json();
+  currentConversationId = data.conversation.id;
+  chat.innerHTML = "";
+  data.messages.forEach(renderSavedMessage);
+  if (!data.messages.length) resetChatView();
+  markActiveConversation();
+  document.querySelector('[data-view="chat"]')?.click();
 }
 function addLoadingMessage() {
   const wrap = document.createElement("div");
@@ -96,7 +168,7 @@ async function askAgent(q) {
     const res = await fetch(`${AUTH_API}/questions`, {
       method: "POST",
       headers: authHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ question: q }),
+      body: JSON.stringify({ question: q, conversationId: currentConversationId }),
     });
     const data = await res.json();
     if (res.status === 401) { logout(); return; }
@@ -104,6 +176,7 @@ async function askAgent(q) {
     addMessage("assistant", data.answer || "No answer was returned.", data.source_used, data.sources || data.citations || [], data.steps || [], data.evidence_status || "");
     renderTrace(data.trace || []);
     sourceUsed.textContent = data.source_used;
+    await loadConversations(true);
     const viewSources = document.getElementById("viewSources");
     if (viewSources) viewSources.classList.toggle("hidden", !(data.citations || []).length);
     if (viewSources) viewSources.onclick = () => {
@@ -160,17 +233,16 @@ document.getElementById("uploadBtn").onclick = async () => {
 };
 
 const themeToggle = document.getElementById("themeToggle");
+const sidebarThemeToggle = document.getElementById("sidebarThemeToggle");
 const savedTheme = localStorage.getItem("nexusiq-theme") || "dark";
 document.body.dataset.theme = savedTheme;
-if (themeToggle) {
-  themeToggle.textContent = savedTheme === "dark" ? "☼" : "☾";
-  themeToggle.onclick = () => {
-    const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-    document.body.dataset.theme = nextTheme;
-    localStorage.setItem("nexusiq-theme", nextTheme);
-    themeToggle.textContent = nextTheme === "dark" ? "☼" : "☾";
-  };
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+  localStorage.setItem("nexusiq-theme", theme);
 }
+applyTheme(savedTheme);
+if (themeToggle) themeToggle.onclick = () => applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
+if (sidebarThemeToggle) sidebarThemeToggle.onclick = () => applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
 
 const sidebar = document.getElementById("sidebar");
 const mobileBackdrop = document.getElementById("mobileBackdrop");
@@ -258,17 +330,20 @@ document.querySelectorAll(".nav-item").forEach((item) => {
     setSidebarOpen(false);
   });
 });
-document.getElementById("newChat")?.addEventListener("click", () => {
-  chat.innerHTML = `<div class="message assistant"><div class="avatar">✦</div><div class="bubble"><div class="message-meta"><strong>NexusIQ AI</strong><span>Just now</span></div><strong class="welcome-title">How can I help with IT support?</strong><p>Start a new grounded support request below.</p></div></div>`;
-  renderTrace([]);
-  sourceUsed.textContent = "—";
-  document.getElementById("viewSources")?.classList.add("hidden");
-  document.querySelector('[data-view="chat"]')?.click();
+document.getElementById("newChat")?.addEventListener("click", async () => {
+  try {
+    await createConversation();
+    document.querySelector('[data-view="chat"]')?.click();
+  } catch (error) {
+    addMessage("assistant", `Unable to create a new chat: ${error.message}`);
+  }
 });
 
 function logout() {
   localStorage.removeItem("nexusiq-token");
   currentUser = null;
+  currentConversationId = null;
+  resetChatView();
   showAuth();
 }
 document.getElementById("logoutBtn")?.addEventListener("click", logout);
@@ -317,6 +392,9 @@ async function restoreSession() {
     showApp((await response.json()).user);
   } catch {
     localStorage.removeItem("nexusiq-token");
+    currentUser = null;
+    currentConversationId = null;
+    resetChatView();
     showAuth();
   }
 }

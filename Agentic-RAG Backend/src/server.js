@@ -7,6 +7,7 @@ const { connectDatabase, getDatabase, closeDatabase } = require("./db");
 const authRoutes = require("./routes/auth");
 const documentRoutes = require("./routes/documents");
 const questionRoutes = require("./routes/questions");
+const conversationRoutes = require("./routes/conversations").router;
 
 const app = express();
 app.use(helmet());
@@ -17,6 +18,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok", service: "enterprise-
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/questions", questionRoutes);
+app.use("/api/conversations", conversationRoutes);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

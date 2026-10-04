@@ -75,30 +75,24 @@
 
           <div class="recent-chats">
             <div class="nav-label">Recent chats</div>
-            <div class="recent-chat"><span>VPN connection guide</span><small>Today, 10:42</small></div>
-            <div class="recent-chat"><span>Password reset policy</span><small>Yesterday</small></div>
           </div>
 
-        <div class="workflow-card">
-          <div class="card-heading"><h3>LangGraph workflow</h3><span class="live-dot">Live</span></div>
-          <div class="flow-step"><i>01</i><span>Route question</span><b>→</b></div>
-          <div class="flow-step"><i>02</i><span>Retrieve private KB</span><b>→</b></div>
-          <div class="flow-step"><i>03</i><span>Grade evidence</span><b>→</b></div>
-          <div class="flow-step"><i>04</i><span>Web fallback if weak</span><b>→</b></div>
-          <div class="flow-step"><i>05</i><span>Rewrite & retry</span><b>→</b></div>
-          <div class="flow-step active"><i>06</i><span>Grounded answer</span><b>✓</b></div>
         </div>
-
         <div class="sidebar-footer">
           <div class="privacy-note"><span>◉</span><div><strong>Private by default</strong><small>Your data stays in your workspace.</small></div></div>
           <button id="newChat" class="new-chat-btn"><span>+</span> New chat</button>
           <button id="openUpload" class="secondary-btn admin-only">
             <span class="plus">+</span> Add company document
           </button>
-        </div>
-        </div>
-        <div class="sidebar-version">
-          <span class="status-dot"></span> Systems operational <span>v1.0.0</span>
+          <button id="sidebarThemeToggle" class="theme-toggle sidebar-theme-btn" aria-label="Switch theme">
+            <span class="theme-toggle-label">Switch theme</span>
+            <span class="theme-toggle-track">
+              <span class="theme-toggle-thumb"></span>
+            </span>
+          </button>
+          <div class="sidebar-version">
+            <span class="status-dot"></span> Systems operational <span>v1.0.0</span>
+          </div>
         </div>
       </aside>
 
@@ -107,7 +101,11 @@
           <div class="breadcrumbs"><span>Workspace</span><b>/</b><strong>IT support</strong></div>
           <div class="topbar-actions">
             <span class="secure-label"><span class="status-dot"></span> Secure session</span>
-            <button id="themeToggle" class="icon-btn" aria-label="Switch theme">☼</button>
+            <button id="themeToggle" class="theme-toggle" aria-label="Switch theme">
+              <span class="theme-toggle-track">
+                <span class="theme-toggle-thumb"></span>
+              </span>
+            </button>
             <button id="openSidebar" class="icon-btn mobile-menu" aria-label="Open navigation">☰</button>
             <div id="profile" class="profile">JD</div>
             <button id="logoutBtn" class="text-btn">Sign out</button>
