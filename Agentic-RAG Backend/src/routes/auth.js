@@ -20,9 +20,12 @@ function issueToken(user) {
   );
 }
 
-router.post("/register", async (req, res, next) => {
+async function registerEmployee(req, res, next) {
   try {
-    const { email, password, name } = req.body || {};
+    const { email, password, name, role } = req.body || {};
+    if (role && role !== "employee") {
+      return res.status(403).json({ error: "Only employees can self-register" });
+    }
     const normalizedEmail = String(email || "").trim().toLowerCase();
     if (!emailPattern.test(normalizedEmail) || typeof password !== "string" || password.length < 8) {
       return res.status(400).json({ error: "Use a valid email and a password of at least 8 characters" });
@@ -45,21 +48,33 @@ router.post("/register", async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
-});
+}
+
+router.post("/register", registerEmployee);
+router.post("/employee/register", registerEmployee);
 
 router.post("/login", async (req, res, next) => {
+  const requestedRole = req.body?.role;
+  const expectedRole = requestedRole === "admin" || requestedRole === "employee" ? requestedRole : undefined;
+  return login(req, res, next, expectedRole);
+});
+
+async function login(req, res, next, expectedRole) {
   try {
     const normalizedEmail = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
     const user = await getDatabase().collection("users").findOne({ email: normalizedEmail });
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    if (!user || (expectedRole && user.role !== expectedRole) || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
     return res.json({ user: publicUser(user), token: issueToken(user) });
   } catch (error) {
     return next(error);
   }
-});
+}
+
+router.post("/employee/login", async (req, res, next) => login(req, res, next, "employee"));
+router.post("/admin/login", async (req, res, next) => login(req, res, next, "admin"));
 
 router.get("/me", authenticate, async (req, res, next) => {
   try {

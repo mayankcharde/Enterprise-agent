@@ -4,44 +4,90 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ app_name }}</title>
-    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="stylesheet" href="/static/css/style.css?v=20261005-landing-v1" />
     <script>
       window.APP_CONFIG = { backendApiUrl: {{ backend_api_url | tojson }} };
     </script>
   </head>
   <body data-theme="dark">
-    <section id="authPage" class="auth-page">
-      <div class="auth-orb auth-orb-one" aria-hidden="true"></div>
-      <div class="auth-orb auth-orb-two" aria-hidden="true"></div>
-      <div class="auth-grid" aria-hidden="true"></div>
-      <div class="auth-card">
-        <div class="auth-card-inner">
+    <section id="landingPage" class="landing-page">
+      <div class="landing-orb landing-orb-one" aria-hidden="true"></div>
+      <div class="landing-orb landing-orb-two" aria-hidden="true"></div>
+      <div class="landing-container">
+        <header class="landing-topbar">
           <div class="brand-row">
             <div class="brand-mark">✦</div>
             <div>
               <div class="brand-name">Nexus<span>IQ</span></div>
-              <div class="brand-caption">Secure IT support</div>
+              <div class="brand-caption">Enterprise copilot</div>
             </div>
           </div>
-          <div class="auth-heading">
-            <div class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE ACCESS</div>
-            <h1 id="authTitle">Sign in to <span>NexusIQ</span></h1>
-            <p id="authDescription" class="muted">Use your employee or administrator account to continue.</p>
+          <button id="openAuthFlowTop" type="button" class="landing-auth-btn">Authenticate</button>
+        </header>
+
+        <main class="landing-main">
+          <div class="landing-copy">
+            <div class="eyebrow">AGENTIC RAG PLATFORM</div>
+            <h1>Trusted IT Answers<br /><span>for Employees &amp; Admins</span></h1>
+            <p>
+              Start from a unified landing experience, then continue securely through role-based authentication.
+              NexusIQ prioritizes private company knowledge and transparently shows evidence for every response.
+            </p>
+            <div class="landing-actions">
+              <button id="openAuthFlow" type="button" class="send-btn landing-primary-btn">Authenticate to continue <span>↗</span></button>
+            </div>
+            <div class="landing-meta">
+              <div><strong>Role-aware access</strong><small>Employee and admin portals after sign-in</small></div>
+              <div><strong>Private-by-design</strong><small>Enterprise documents stay in your workspace</small></div>
+              <div><strong>Grounded responses</strong><small>Traceable source-backed answers</small></div>
+            </div>
           </div>
-          <form id="authForm" class="auth-form">
-            <label id="nameField" class="hidden">Name<div class="auth-input-wrap"><span>◈</span><input id="authName" type="text" autocomplete="name" placeholder="Your full name" /></div></label>
-            <label>Email<div class="auth-input-wrap"><span>@</span><input id="authEmail" type="email" autocomplete="email" placeholder="you@company.com" required /></div></label>
-            <label>Password<div class="auth-input-wrap"><span>⌁</span><input id="authPassword" type="password" autocomplete="current-password" placeholder="Enter your password" minlength="8" required /></div></label>
-            <button id="authSubmit" class="send-btn full" type="submit"><span>Sign in securely</span><b>↗</b></button>
-          </form>
-          <div id="authStatus" class="auth-status" role="alert"></div>
-          <div class="auth-divider"><span>or</span></div>
-          <button id="authModeToggle" class="text-btn auth-toggle" type="button">New employee? <strong>Create an account</strong></button>
-          <div class="auth-footer"><span class="status-dot"></span> Protected workspace <span class="auth-lock">⌘</span></div>
-        </div>
+          <div class="landing-visual">
+            <h2>Workflow intelligence</h2>
+            <p>LangGraph orchestration for routing, evidence grading, and response generation.</p>
+            <img src="/static/langgraph-workflow.png" alt="LangGraph workflow showing routing, retrieval, and answer generation stages" />
+          </div>
+        </main>
       </div>
     </section>
-    <div class="shell">
+    <section id="authPage" class="auth-page hidden">
+      <div class="auth-orb auth-orb-one" aria-hidden="true"></div>
+      <div class="auth-orb auth-orb-two" aria-hidden="true"></div>
+      <div class="auth-grid" aria-hidden="true"></div>
+      <div class="auth-center">
+        <button id="backToLanding" class="back-to-landing" type="button" aria-label="Back to landing page">
+          <span aria-hidden="true">←</span> Back to landing
+        </button>
+        <div class="auth-card" data-role="employee">
+          <div class="auth-card-inner">
+          <div class="auth-heading">
+            <div class="auth-role-switch" role="tablist" aria-label="Choose portal">
+              <span class="auth-role-slider" aria-hidden="true"></span>
+              <button id="employeeAuthTab" class="auth-role-tab active" type="button" role="tab" aria-selected="true">
+                <span class="role-icon">♙</span><span><strong>Employee</strong><small>Ask &amp; explore</small></span>
+              </button>
+              <button id="adminAuthTab" class="auth-role-tab" type="button" role="tab" aria-selected="false">
+                <span class="role-icon">◆</span><span><strong>Admin</strong><small>Manage workspace</small></span>
+              </button>
+            </div>
+            <div class="auth-mode-icon" id="authModeIcon" aria-hidden="true">♙</div>
+            <h2 id="authTitle">Employee Portal</h2>
+            <p id="authDescription" class="muted">Access company knowledge base and get IT support assistance.</p>
+          </div>
+          <form id="authForm" class="auth-form" novalidate>
+            <label id="nameField" class="hidden">Name<div class="auth-input-wrap"><span>◈</span><input id="authName" type="text" autocomplete="name" placeholder="Your full name" /></div></label>
+            <label for="authEmail">Work email<div class="auth-input-wrap"><span>@</span><input id="authEmail" type="email" autocomplete="email" placeholder="you@company.com" required /></div></label>
+            <label for="authPassword">Password<div class="auth-input-wrap"><span>⌁</span><input id="authPassword" type="password" autocomplete="current-password" placeholder="Enter your password" minlength="8" required /><button id="togglePassword" class="password-toggle" type="button" aria-label="Show password">◉</button></div></label>
+            <div class="auth-options"><label class="remember-option"><input id="rememberMe" type="checkbox" /> <span>Remember me</span></label><button id="forgotPassword" class="forgot-link" type="button">Forgot password?</button></div>
+            <button id="authSubmit" class="send-btn full" type="submit"><span id="authSubmitLabel">Sign in as Employee</span><b>↗</b></button>
+          </form>
+          <div id="authStatus" class="auth-status" role="alert"></div>
+          <div id="authModeToggle" class="auth-register"><span>New employee?</span> <button class="text-btn auth-toggle" type="button">Create an account</button></div>
+        </div>
+      </div>
+      </div>
+    </section>
+    <div class="shell hidden">
       <div id="mobileBackdrop" class="mobile-backdrop hidden"></div>
       <aside id="sidebar" class="sidebar">
         <div class="sidebar-content">
@@ -68,7 +114,8 @@
             <button class="nav-item active" data-view="chat"><span class="nav-icon">⌁</span> Chat workspace</button>
             <button class="nav-item" data-view="workflow"><span class="nav-icon">◇</span> LangGraph workflow</button>
             <button class="nav-item" data-view="knowledge"><span class="nav-icon">▤</span> Knowledge base</button>
-            <button class="nav-item" data-view="documents"><span class="nav-icon">□</span> Documents</button>
+            <button class="nav-item admin-only hidden" data-view="documents"><span class="nav-icon">□</span> Documents</button>
+            <button class="nav-item admin-only hidden" data-view="admin"><span class="nav-icon">♙</span> Admin dashboard</button>
             <button class="nav-item" data-view="observability"><span class="nav-icon">◌</span> Observability</button>
             <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span> Settings</button>
           </nav>
@@ -192,6 +239,6 @@
       </div>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v=20261005-landing-v1"></script>
   </body>
 </html>

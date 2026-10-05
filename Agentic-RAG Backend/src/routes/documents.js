@@ -18,7 +18,13 @@ router.get("/", authenticate, async (req, res, next) => {
       .find({}, { projection: { filename: 1, chunks: 1, uploadedAt: 1, uploadedBy: 1 } })
       .sort({ uploadedAt: -1 })
       .toArray();
-    return res.json({ documents });
+    return res.json({ documents: documents.map((document) => ({
+      id: document._id.toString(),
+      filename: document.filename,
+      chunks: document.chunks || 0,
+      uploadedBy: document.uploadedBy,
+      uploadedAt: document.uploadedAt,
+    })) });
   } catch (error) {
     return next(error);
   }

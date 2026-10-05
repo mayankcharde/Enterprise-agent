@@ -6,7 +6,11 @@ const sourceUsed = document.getElementById("sourceUsed");
 const AUTH_API = `${window.APP_CONFIG?.backendApiUrl || "http://127.0.0.1:3000"}/api`;
 let currentUser = null;
 let authMode = "login";
+let authRole = "employee";
 let currentConversationId = null;
+const landingPage = document.getElementById("landingPage");
+const authPage = document.getElementById("authPage");
+const appShell = document.querySelector(".shell");
 
 function authHeaders(extra = {}) {
   const token = localStorage.getItem("nexusiq-token");
@@ -18,18 +22,36 @@ function showApp(user) {
     resetChatView();
   }
   currentUser = user;
-  document.getElementById("authPage")?.classList.add("hidden");
-  document.querySelector(".shell")?.classList.remove("hidden");
+  landingPage?.classList.add("hidden");
+  authPage?.classList.add("hidden");
+  appShell?.classList.remove("hidden");
   document.getElementById("profile").textContent = (user.name || user.email).slice(0, 2).toUpperCase();
   document.querySelectorAll(".admin-only").forEach((element) => {
     element.classList.toggle("hidden", user.role !== "admin");
   });
-  document.querySelector('[data-view="documents"]')?.classList.toggle("hidden", user.role !== "admin");
+  document.querySelector('[data-view="admin"]')?.classList.toggle("hidden", user.role !== "admin");
+  if (user.role === "admin") {
+    window.history.replaceState({}, "", "/admin/dashboard");
+    document.querySelector('[data-view="admin"]')?.click();
+  } else {
+    window.history.replaceState({}, "", "/employee/dashboard");
+    document.querySelector('[data-view="chat"]')?.click();
+    renderEmployeeSharedDocuments();
+  }
   loadConversations();
 }
+function showLanding() {
+  landingPage?.classList.remove("hidden");
+  authPage?.classList.add("hidden");
+  appShell?.classList.add("hidden");
+  window.history.replaceState({}, "", "/");
+}
 function showAuth() {
-  document.getElementById("authPage")?.classList.remove("hidden");
-  document.querySelector(".shell")?.classList.add("hidden");
+  landingPage?.classList.add("hidden");
+  authPage?.classList.remove("hidden");
+  appShell?.classList.add("hidden");
+  setAuthRole("employee");
+  document.getElementById("authStatus").textContent = "";
 }
 
 function escapeHtml(s = "") {
@@ -285,9 +307,110 @@ const viewCopy = {
     ["Appearance", "Switch between the Midnight + Neon Rose dark theme and the accessible light theme.", "Use the theme button"],
     ["Backend configuration", "API keys, embedding configuration, vector search, and model settings remain server-side.", "Protected"],
     ["Response behavior", "Answers are concise, source-aware, citation-validated, and explicit when evidence is insufficient.", "Grounded by default"]
-  ]]
+  ]],
+  admin: ["Admin dashboard", "Manage shared company documents and administrator access.", []]
 };
-function renderWorkspaceView(view) {
+async function loadDocuments() {
+  const response = await fetch(`${AUTH_API}/documents`, { headers: authHeaders() });
+  if (!response.ok) throw new Error("Unable to load documents");
+  return (await response.json()).documents || [];
+}
+async function renderSharedDocuments(target) {
+  try {
+    const documents = await loadDocuments();
+    target.insertAdjacentHTML(
+      "beforeend",
+      documents.length
+        ? documents.map((document) => `<article class="workspace-card shared-document-card"><span class="card-status">Shared document</span><h3>${escapeHtml(document.filename)}</h3><p>${document.chunks} indexed chunks · Added ${new Date(document.uploadedAt).toLocaleDateString()}</p></article>`).join("")
+        : `<article class="workspace-card shared-document-card"><h3>No shared documents yet</h3><p>Documents uploaded by an administrator will appear here for all employees.</p></article>`,
+    );
+  } catch (error) {
+    target.insertAdjacentHTML("beforeend", `<article class="workspace-card shared-document-card"><p>Shared documents are temporarily unavailable: ${escapeHtml(error.message)}</p></article>`);
+  }
+}
+async function renderEmployeeSharedDocuments() {
+  if (currentUser?.role !== "employee") return;
+  const chatArea = document.getElementById("chat");
+  if (!chatArea || document.getElementById("employeeSharedDocuments")) return;
+  const section = document.createElement("section");
+  section.id = "employeeSharedDocuments";
+  section.className = "employee-shared-documents";
+  section.innerHTML = `
+    <div class="shared-documents-heading">
+      <div><span class="eyebrow">COMPANY KNOWLEDGE</span><h3>Shared documents</h3></div>
+    </div>
+    <div class="shared-documents-list"><span class="muted">Loading shared documents…</span></div>`;
+  chatArea.appendChild(section);
+  await renderSharedDocuments(section.querySelector(".shared-documents-list"));
+}
+async function renderAdminDashboard() {
+  secondaryContent.innerHTML = `
+    <article class="workspace-card workspace-card-action">
+      <span class="card-status">Administrator access</span>
+      <h3>Add company document</h3>
+      <p>Index an approved PDF, TXT, Markdown, or DOCX file for every authenticated employee and administrator.</p>
+      <button type="button" class="send-btn workspace-action-btn" id="openUploadFromAdmin">+ Add document</button>
+    </article>
+    <article class="workspace-card">
+      <span class="card-status">Administrator access</span>
+      <h3>Add a new administrator</h3>
+      <form id="newAdminForm" class="admin-form">
+        <input name="name" type="text" placeholder="Full name" required maxlength="100" />
+        <input name="email" type="email" placeholder="admin@company.com" required />
+        <input name="password" type="password" placeholder="Temporary password (8+ characters)" minlength="8" required />
+        <button class="send-btn workspace-action-btn" type="submit">Create administrator</button>
+        <div id="newAdminStatus" class="upload-status" role="alert"></div>
+      </form>
+    </article>
+    <article class="workspace-card">
+      <span class="card-status">Current administrators</span>
+      <div id="adminList">Loading administrators…</div>
+    </article>`;
+  document.getElementById("openUploadFromAdmin")?.addEventListener("click", () => {
+    document.getElementById("uploadModal")?.classList.remove("hidden");
+  });
+  document.getElementById("newAdminForm")?.addEventListener("submit", createAdmin);
+  try {
+    const response = await fetch(`${AUTH_API}/admin/admins`, { headers: authHeaders() });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Unable to load administrators");
+    document.getElementById("adminList").innerHTML = data.admins
+      .map((admin) => `<div class="admin-list-item"><strong>${escapeHtml(admin.name)}</strong><span>${escapeHtml(admin.email)}</span></div>`)
+      .join("");
+  } catch (error) {
+    document.getElementById("adminList").textContent = error.message;
+  }
+}
+async function createAdmin(event) {
+  event.preventDefault();
+  const formElement = event.currentTarget;
+  const status = document.getElementById("newAdminStatus");
+  const submit = formElement.querySelector("button");
+  submit.disabled = true;
+  status.textContent = "";
+  try {
+    const payload = Object.fromEntries(new FormData(formElement).entries());
+    const response = await fetch(`${AUTH_API}/admin/admins`, {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Unable to create administrator");
+    status.textContent = `${data.admin.name} can now sign in through the Administrator portal.`;
+    formElement.reset();
+    await renderAdminDashboard();
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+}
+async function renderWorkspaceView(view) {
+  if (view === "documents" && currentUser?.role !== "admin") {
+    document.querySelector('[data-view="chat"]')?.click();
+    return;
+  }
   const copy = viewCopy[view];
   if (!copy) {
     chatView?.classList.remove("hidden");
@@ -298,15 +421,20 @@ function renderWorkspaceView(view) {
   secondaryView?.classList.remove("hidden");
   secondaryTitle.textContent = copy[0];
   secondaryDescription.textContent = copy[1];
-  const workflowDiagram = view === "workflow"
-    ? `<figure class="workflow-diagram">
-        <img src="/static/images/langgraph-workflow.png" alt="LangGraph workflow diagram showing question routing, knowledge-base retrieval, evidence grading, web search fallback, answer generation, query rewriting, and the final response." />
+  if (view === "workflow") {
+    secondaryContent.innerHTML = `<figure class="workflow-diagram">
+        <img src="/static/langgraph-workflow.png" alt="LangGraph workflow diagram showing question routing, knowledge-base retrieval, guardrails, web search fallback, answer generation, response validation, and the final response." style="width:100%;height:auto;display:block;" />
         <figcaption>LangGraph execution path used to ground each support answer.</figcaption>
-      </figure>`
-    : "";
-  secondaryContent.innerHTML = workflowDiagram + copy[2].map(([title, body, status]) =>
+      </figure>`;
+    return;
+  }
+  secondaryContent.innerHTML = copy[2].map(([title, body, status]) =>
     `<article class="workspace-card"><span class="card-status">${escapeHtml(status)}</span><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></article>`
   ).join("");
+  if (view === "admin" && currentUser?.role === "admin") {
+    await renderAdminDashboard();
+    return;
+  }
   if (view === "documents" && currentUser?.role === "admin") {
     secondaryContent.insertAdjacentHTML(
       "afterbegin",
@@ -321,12 +449,15 @@ function renderWorkspaceView(view) {
       document.getElementById("uploadModal")?.classList.remove("hidden");
     });
   }
+  if (view === "documents") {
+    await renderSharedDocuments(secondaryContent);
+  }
 }
 document.querySelectorAll(".nav-item").forEach((item) => {
-  item.addEventListener("click", () => {
+  item.addEventListener("click", async () => {
     document.querySelectorAll(".nav-item").forEach((navItem) => navItem.classList.remove("active"));
     item.classList.add("active");
-    renderWorkspaceView(item.dataset.view);
+    await renderWorkspaceView(item.dataset.view);
     setSidebarOpen(false);
   });
 });
@@ -344,36 +475,116 @@ function logout() {
   currentUser = null;
   currentConversationId = null;
   resetChatView();
-  showAuth();
+  window.history.replaceState({}, "", "/");
+  showLanding();
 }
 document.getElementById("logoutBtn")?.addEventListener("click", logout);
+document.getElementById("openAuthFlow")?.addEventListener("click", showAuth);
+document.getElementById("openAuthFlowTop")?.addEventListener("click", showAuth);
+document.getElementById("backToLanding")?.addEventListener("click", showLanding);
+function setAuthRole(role) {
+  authRole = role;
+  authMode = "login";
+  const isAdmin = role === "admin";
+  document.querySelector(".auth-card")?.setAttribute("data-role", role);
+  document.getElementById("authTitle").textContent = isAdmin ? "Admin Portal" : "Employee Portal";
+  document.getElementById("authDescription").textContent = isAdmin
+    ? "Manage workspace, users, documents, and IT support content."
+    : "Access company knowledge base and get IT support assistance.";
+  document.getElementById("authModeIcon").textContent = isAdmin ? "◆" : "♙";
+  document.getElementById("nameField").classList.add("hidden");
+  document.getElementById("authPassword").autocomplete = "current-password";
+  document.getElementById("authSubmitLabel").textContent = isAdmin ? "Sign in as Admin" : "Sign in as Employee";
+  document.getElementById("authModeToggle").classList.toggle("hidden", isAdmin);
+  document.querySelectorAll(".auth-role-tab").forEach((tab) => {
+    const active = tab.id === `${role}AuthTab`;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+}
+document.getElementById("employeeAuthTab")?.addEventListener("click", () => setAuthRole("employee"));
+document.getElementById("adminAuthTab")?.addEventListener("click", () => setAuthRole("admin"));
 document.getElementById("authModeToggle")?.addEventListener("click", () => {
   authMode = authMode === "login" ? "register" : "login";
-  document.getElementById("authTitle").textContent = authMode === "login" ? "Sign in to NexusIQ" : "Create employee account";
+  document.getElementById("authTitle").textContent = authMode === "login" ? "Employee Portal" : "Create employee account";
   document.getElementById("authDescription").textContent = authMode === "login" ? "Use your employee or administrator account to continue." : "Employee accounts can ask questions and view the knowledge workspace.";
   document.getElementById("nameField").classList.toggle("hidden", authMode === "login");
   document.getElementById("authPassword").autocomplete = authMode === "login" ? "current-password" : "new-password";
-  document.getElementById("authSubmit").textContent = authMode === "login" ? "Sign in" : "Create account";
-  document.getElementById("authModeToggle").textContent = authMode === "login" ? "New employee? Create an account" : "Already have an account? Sign in";
+  document.getElementById("authSubmitLabel").textContent = authMode === "login" ? "Sign in as Employee" : "Create account";
+  document.querySelector("#authModeToggle span").textContent = authMode === "login" ? "New employee?" : "Already have an account?";
+  document.querySelector("#authModeToggle button").textContent = authMode === "login" ? "Create an account" : "Sign in";
 });
+document.getElementById("togglePassword")?.addEventListener("click", () => {
+  const password = document.getElementById("authPassword");
+  const visible = password.type === "text";
+  password.type = visible ? "password" : "text";
+  document.getElementById("togglePassword").textContent = visible ? "◉" : "◌";
+  document.getElementById("togglePassword").setAttribute("aria-label", visible ? "Show password" : "Hide password");
+});
+document.getElementById("forgotPassword")?.addEventListener("click", () => {
+  document.getElementById("authStatus").textContent = "Password reset is managed by your IT administrator.";
+});
+const rememberedEmail = localStorage.getItem("nexusiq-remembered-email");
+if (rememberedEmail) {
+  document.getElementById("authEmail").value = rememberedEmail;
+  document.getElementById("rememberMe").checked = true;
+}
 document.getElementById("authForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const status = document.getElementById("authStatus");
   const submit = document.getElementById("authSubmit");
+  const submitLabel = document.getElementById("authSubmitLabel");
   status.textContent = "";
   submit.disabled = true;
   const payload = {
     email: document.getElementById("authEmail").value.trim(),
     password: document.getElementById("authPassword").value,
+    role: authRole,
   };
-  if (authMode === "register") payload.name = document.getElementById("authName").value.trim();
+  if (document.getElementById("rememberMe").checked) {
+    localStorage.setItem("nexusiq-remembered-email", payload.email);
+  } else {
+    localStorage.removeItem("nexusiq-remembered-email");
+  }
+  if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+    status.textContent = "Enter a valid work email address.";
+    submit.disabled = false;
+    return;
+  }
+  if (!payload.password) {
+    status.textContent = "Enter your password to continue.";
+    submit.disabled = false;
+    return;
+  }
+  if (authMode === "register") {
+    payload.name = document.getElementById("authName").value.trim();
+    if (authRole !== "employee") {
+      status.textContent = "Only employees can create an account.";
+      submit.disabled = false;
+      return;
+    }
+    if (!payload.name) {
+      status.textContent = "Enter your full name to create an employee account.";
+      submit.disabled = false;
+      return;
+    }
+  }
   try {
-    const response = await fetch(`${AUTH_API}/auth/${authMode === "login" ? "login" : "register"}`, {
+    const endpoint = authMode === "register" ? "register" : `${authRole}/login`;
+    submitLabel.textContent = authMode === "register" ? "Creating account…" : "Signing in…";
+    submit.classList.add("is-loading");
+    const response = await fetch(`${AUTH_API}/auth/${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error(response.ok ? "Authentication returned an invalid response" : `Authentication failed (${response.status})`);
+    }
     if (!response.ok) throw new Error(data.error || "Authentication failed");
     localStorage.setItem("nexusiq-token", data.token);
     showApp(data.user);
@@ -381,11 +592,13 @@ document.getElementById("authForm")?.addEventListener("submit", async (event) =>
     status.textContent = error.message;
   } finally {
     submit.disabled = false;
+    submit.classList.remove("is-loading");
+    submitLabel.textContent = authMode === "register" ? "Create account" : `Sign in as ${authRole === "admin" ? "Admin" : "Employee"}`;
   }
 });
 async function restoreSession() {
   const token = localStorage.getItem("nexusiq-token");
-  if (!token) return showAuth();
+  if (!token) return showLanding();
   try {
     const response = await fetch(`${AUTH_API}/auth/me`, { headers: authHeaders() });
     if (!response.ok) throw new Error("Session expired");
@@ -395,7 +608,7 @@ async function restoreSession() {
     currentUser = null;
     currentConversationId = null;
     resetChatView();
-    showAuth();
+    showLanding();
   }
 }
 restoreSession();

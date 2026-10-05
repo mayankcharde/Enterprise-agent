@@ -1,6 +1,7 @@
 from typing import Any, Literal
 
 from langchain_core.documents import Document
+from langchain_core.messages import BaseMessage
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -43,6 +44,10 @@ class AnswerResponse(BaseModel):
 class AgentState(TypedDict, total=False):
     question: str
     current_query: str
+    final_response: str
+    guardrail_reason: str
+    guardrail_blocked: bool
+    messages: list[BaseMessage]
     category: QuestionCategory
     kb_docs: list[Document]
     web_results: str

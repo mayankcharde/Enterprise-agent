@@ -220,3 +220,6 @@ __marimo__/
 # Node backend
 Agentic-RAG Backend/node_modules/
 Agentic-RAG Backend/.env
+
+
+Agentic-RAG/uploads

@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth");
 const documentRoutes = require("./routes/documents");
 const questionRoutes = require("./routes/questions");
 const conversationRoutes = require("./routes/conversations").router;
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 app.use(helmet());
@@ -16,9 +17,14 @@ app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", (_req, res) => res.json({ status: "ok", service: "enterprise-it-rag-backend" }));
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/conversations", conversationRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+});
 
 app.use((error, _req, res, _next) => {
   console.error(error);

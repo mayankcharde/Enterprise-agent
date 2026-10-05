@@ -31,3 +31,21 @@ def index(request: Request):
         name="index.html",
         context={"app_name": settings.app_name, "backend_api_url": settings.backend_api_url},
     )
+
+
+@app.get("/admin/dashboard")
+def admin_dashboard(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"app_name": settings.app_name, "backend_api_url": settings.backend_api_url},
+    )
+
+
+@app.get("/employee/dashboard")
+def employee_dashboard(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"app_name": settings.app_name, "backend_api_url": settings.backend_api_url},
+    )

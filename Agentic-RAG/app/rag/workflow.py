@@ -5,6 +5,7 @@ from typing import Literal
 from langchain_groq import ChatGroq
 from langchain_tavily import TavilySearch
 from langchain_core.documents import Document
+from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 
 from app.core.config import get_settings
@@ -30,6 +31,25 @@ CURRENT_EXTERNAL_TERMS = (
     "latest", "current", "today", "outage", "service health", "public",
     "microsoft teams", "vendor documentation",
 )
+OUT_OF_DOMAIN_TERMS = (
+    "flight", "flights", "hotel", "hotels", "vacation", "holiday", "tourist",
+    "travel", "trip", "restaurant", "recipe", "weather", "stock price",
+    "football", "cricket", "movie", "song lyrics",
+)
+SAFETY_BLOCK_PATTERNS = (
+    r"\b(?:sex|sexual|porn|pornography|xxx|nude|nudity|explicit sexual)\b",
+    r"\b(?:how (?:do i|to)|instructions? for|steps? to|help me)\s+"
+    r"(?:make|build|create)\s+"
+    r"(?:a bomb|an explosive|a weapon|poison)\b",
+    r"\b(?:how (?:do i|to)|instructions? for|steps? to)\s+"
+    r"(?:kill|murder|hurt|poison)\b",
+    r"\b(?:self[- ]harm|suicide method|ways to die|harm myself)\b",
+    r"\b(?:jailbreak|bypass safety|ignore (?:all )?(?:previous|system) instructions?)\b",
+)
+GUARDRAIL_BLOCK_MESSAGE = (
+    "Your request was blocked by the safety and scope guardrail. Please ask a "
+    "relevant enterprise IT, internal procedure, or technical support question."
+)
 
 
 def classify_question(question: str) -> QuestionCategory:
@@ -41,6 +61,18 @@ def classify_question(question: str) -> QuestionCategory:
     if any(term in text for term in INTERNAL_KNOWLEDGE_TERMS):
         return "INTERNAL_KNOWLEDGE"
     return "GENERAL_TECHNICAL_QUESTION"
+
+
+def guardrail_reason(question: str) -> str | None:
+    """Return a professional, non-echoing reason for unsafe or unrelated input."""
+    text = question.casefold()
+    out_of_domain = any(
+        re.search(rf"\b{re.escape(term)}\b", text) for term in OUT_OF_DOMAIN_TERMS
+    )
+    unsafe = any(re.search(pattern, text) for pattern in SAFETY_BLOCK_PATTERNS)
+    if out_of_domain or unsafe:
+        return GUARDRAIL_BLOCK_MESSAGE
+    return None
 
 
 def deduplicate_documents(docs: list[Document]) -> list[Document]:
@@ -106,15 +138,28 @@ def add_trace(state: AgentState, message: str) -> list[str]:
 
 
 def route_question(state: AgentState):
+    blocked_reason = state.get("guardrail_reason") or guardrail_reason(state["question"])
+    if blocked_reason:
+        return {
+            "guardrail_blocked": True,
+            "guardrail_reason": blocked_reason,
+            "final_response": blocked_reason,
+            "trace": add_trace(state, "Guardrail -> blocked out-of-domain question"),
+        }
     category = classify_question(state["question"])
     return {
+        "guardrail_blocked": False,
         "category": category,
         "source_used": category.lower(),
         "trace": add_trace(state, f"Query classification -> {category}"),
     }
 
 
-def route_after_router(state: AgentState) -> Literal["retrieve_kb", "search_web", "direct_answer"]:
+def route_after_router(
+    state: AgentState,
+) -> Literal["guardrail_blocked_agent", "retrieve_kb", "search_web", "direct_answer"]:
+    if state.get("guardrail_blocked"):
+        return "guardrail_blocked_agent"
     if state["category"] == "CURRENT_EXTERNAL_INFORMATION":
         return "search_web"
     # Employee questions do not reliably contain internal-policy keywords.
@@ -242,6 +287,24 @@ def insufficient(state: AgentState):
     }
 
 
+def guardrail_blocked_agent(state: AgentState):
+    reason = state.get("final_response") or state.get("guardrail_reason") or (
+        "This request was blocked by the IT support input guardrail."
+    )
+    return {
+        "final_response": reason,
+        "answer": reason,
+        "steps": [],
+        "citations": [],
+        "source_type": "none",
+        "source_used": "guardrail_blocked",
+        "evidence_status": "insufficient_evidence",
+        "needs_it_support": False,
+        "messages": [AIMessage(content=reason)],
+        "trace": add_trace(state, "Guardrail -> returned blocked response"),
+    }
+
+
 def validate_response(state: AgentState):
     valid = {citation.get("url") or citation.get("document_id") for citation in state.get("citations", [])}
     citations = [c for c in state.get("citations", []) if (c.get("url") or c.get("document_id")) in valid]
@@ -267,7 +330,8 @@ def build_graph():
         "route_question": route_question, "retrieve_kb": retrieve_kb,
         "search_web": search_web, "generate_from_kb": generate_from_kb,
         "generate_from_web": generate_from_web, "direct_answer": direct_answer,
-        "insufficient": insufficient, "validate_response": validate_response,
+        "insufficient": insufficient, "guardrail_blocked_agent": guardrail_blocked_agent,
+        "validate_response": validate_response,
     }.items():
         graph.add_node(name, fn)
     graph.add_edge(START, "route_question")
@@ -282,7 +346,10 @@ def build_graph():
         },
     )
     graph.add_edge("search_web", "generate_from_web")
-    for node in ("generate_from_kb", "generate_from_web", "direct_answer", "insufficient"):
+    for node in (
+        "generate_from_kb", "generate_from_web", "direct_answer", "insufficient",
+        "guardrail_blocked_agent",
+    ):
         graph.add_edge(node, "validate_response")
     graph.add_edge("validate_response", END)
     return graph.compile()
