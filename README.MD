@@ -5,6 +5,8 @@ professional browser workspace, employee and administrator authentication,
 private company knowledge retrieval, grounded answer generation, and
 observable LangGraph execution.
 
+Live Link: https://enterprise-agent-97fq.onrender.com/
+
 The application is split into two services:
 
 | Service | Location | Default port | Responsibility |
